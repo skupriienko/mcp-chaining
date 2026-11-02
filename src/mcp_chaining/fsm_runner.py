@@ -9,7 +9,6 @@ without conversational context pollution.
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 import time
 from enum import StrEnum

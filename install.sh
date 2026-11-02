@@ -59,12 +59,12 @@ p = init_db()
 print(f'Database initialized at {p}')
 " 2>/dev/null || log_warn "Database will be initialized on first run."
 
-# 3. Install Agent Skill integration
+# 3. Install Agent Skill & Module integration
 SKILLS_DIR="${TARGET_DIR}/.agents/skills/mcp-chaining"
-mkdir -p "${SKILLS_DIR}/scripts"
+mkdir -p "${SKILLS_DIR}/src"
 cp "${SCRIPT_DIR}/SKILL.md" "${SKILLS_DIR}/SKILL.md"
-cp -r "${SCRIPT_DIR}/src/mcp_chaining/"* "${SKILLS_DIR}/scripts/" 2>/dev/null || true
-log_ok "Agent Skill installed -> ${SKILLS_DIR}/SKILL.md"
+cp -r "${SCRIPT_DIR}/src/mcp_chaining" "${SKILLS_DIR}/src/"
+log_ok "Agent Skill & library installed -> ${SKILLS_DIR}"
 
 # 4. Inject MCP Chaining Rule into ALL AI Tools
 INSTRUCTION_SNIPPET=$(cat <<'EOF'

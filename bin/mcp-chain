@@ -2,8 +2,16 @@
 import sys
 from pathlib import Path
 
-SRC_DIR = Path(__file__).resolve().parent.parent / "src"
-sys.path.insert(0, str(SRC_DIR))
+# Search candidate locations for portable self-contained execution
+ROOT_DIR = Path(__file__).resolve().parent.parent
+candidate_dirs = [
+    ROOT_DIR / "src",
+    ROOT_DIR / ".agents" / "skills" / "mcp-chaining" / "src",
+    ROOT_DIR / "lib",
+]
+for d in candidate_dirs:
+    if d.exists() and str(d) not in sys.path:
+        sys.path.insert(0, str(d))
 
 from mcp_chaining.cli import main
 
