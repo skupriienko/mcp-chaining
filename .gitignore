@@ -1,0 +1,25 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution & Packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Local database & temp files
+.mesh/
+*.db
+*.db-wal
+*.db-shm
+.pytest_cache/
+
+# Environments & IDEs
+.venv/
+venv/
+.env
+.idea/
+.vscode/
+*.swp
