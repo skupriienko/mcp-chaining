@@ -2,8 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](pyproject.toml)
-[![Architecture: NetworkX + SQLite FTS5](https://img.shields.io/badge/Architecture-NetworkX%20%2B%20SQLite%20FTS5-green.svg)](#architecture)
+[![CI](https://github.com/skupriienko/mcp-chaining/actions/workflows/ci.yml/badge.svg)](https://github.com/skupriienko/mcp-chaining/actions)
 [![Token Savings: ~90%](https://img.shields.io/badge/Token%20Savings-~90%25-brightgreen.svg)](#-proven-metrics-before-vs-after)
+[![Zero-Dependency Core](https://img.shields.io/badge/Dependencies-Zero%20Stdlib-green.svg)](pyproject.toml)
 
 **Autonomous Tool Chaining & Sub-Loop Orchestration Engine for AI Coding Agents and LLMs.**
 
@@ -11,19 +12,41 @@ Eliminates context rot, suppresses intermediate tool chatter, and chains dispara
 
 ---
 
-## ⚡ Quickstart (One-Line Universal Installer)
+## ⚡ Installation & Package Management
 
+### 1. One-Line Universal Installer (Zero Friction)
 Install directly into any project on Linux, macOS, or WSL with one command:
-
 ```bash
 bash install.sh
 ```
+This single command installs the `mcp-chain` CLI, initializes the local SQLite FTS5 mesh, and **automatically integrates the sub-loop chaining rule into all popular AI tools** (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `.cursorrules`, `.cursor/rules/`, `.windsurfrules`, `.github/copilot-instructions.md`, `CONVENTIONS.md`).
 
-This single command installs the `mcp-chain` CLI, sets up the local SQLite FTS5 mesh, and **automatically integrates the sub-loop chaining rule into all popular AI tools** (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `.cursorrules`, `.cursor/rules/`, `.windsurfrules`, `.github/copilot-instructions.md`, `CONVENTIONS.md`).
-
-Or install via Python pip:
+### 2. Standard Python Packaging (PEP 517 / 621)
+Install into your current virtual environment:
 ```bash
+# Standard editable install
 pip install -e .
+
+# With optional graph acceleration (NetworkX)
+pip install -e ".[graph]"
+
+# Full development environment (testing, linting, typing)
+pip install -e ".[dev]"
+```
+
+Or using requirements files:
+```bash
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+```
+
+### 3. Developer Quality Gates
+```bash
+# Setup pre-commit git hooks
+pre-commit install
+
+# Run unit & stress tests
+python3 -W error tests/test_stress.py
 ```
 
 ---

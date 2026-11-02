@@ -1,0 +1,3 @@
+# Core package has zero mandatory dependencies (pure Python 3.10+ stdlib)
+# Optional graph acceleration:
+# networkx>=3.0

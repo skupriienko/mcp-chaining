@@ -1,0 +1,16 @@
+include LICENSE
+include README.md
+include pyproject.toml
+include SKILL.md
+include install.sh
+include requirements.txt
+include requirements-dev.txt
+
+recursive-include bin *
+recursive-include src *.py py.typed
+recursive-include tests *.py
+recursive-include examples *
+
+exclude .gitignore
+exclude tests/__pycache__*
+global-exclude *.py[cod] __pycache__ *.so .DS_Store
