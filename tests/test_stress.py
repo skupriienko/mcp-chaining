@@ -6,7 +6,6 @@ sub-loop boundary execution, capability invariant enforcement ($L_c <= L_d$),
 adversarial input handling (SQL injection, buffer limits), and mutation security gates.
 """
 
-import os
 import sys
 import tempfile
 import time
@@ -18,13 +17,12 @@ SRC_DIR = Path(__file__).resolve().parent.parent / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from mcp_chaining.mesh_db import init_db
+from mcp_chaining.fsm_runner import MAX_HOOK_OUTPUT_CHARS, FSMSequenceRunner
 from mcp_chaining.graph_engine import PortableToolGraph
-from mcp_chaining.fsm_runner import FSMSequenceRunner, MAX_HOOK_OUTPUT_CHARS
+from mcp_chaining.mesh_db import init_db
 
 
 class TestMCPChainingStress(unittest.TestCase):
-
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.db_path = Path(self.temp_dir.name) / "test_mesh.db"
@@ -50,7 +48,9 @@ class TestMCPChainingStress(unittest.TestCase):
                 capability_weight=1.5,
             )
         elapsed_onboard = time.time() - t0
-        print(f"\n[STRESS] Onboarded 200 tools in {elapsed_onboard:.3f}s ({200/elapsed_onboard:.1f} tools/sec)")
+        print(
+            f"\n[STRESS] Onboarded 200 tools in {elapsed_onboard:.3f}s ({200 / elapsed_onboard:.1f} tools/sec)"
+        )
 
         summary = self.graph.summary()
         self.assertGreaterEqual(summary["total_nodes"], 211)
@@ -64,7 +64,9 @@ class TestMCPChainingStress(unittest.TestCase):
             self.assertIsInstance(friends, list)
             self.assertIsInstance(opponents, list)
         elapsed_queries = time.time() - t1
-        print(f"[STRESS] 400 semantic relationship queries completed in {elapsed_queries:.3f}s ({400/elapsed_queries:.1f} queries/sec)")
+        print(
+            f"[STRESS] 400 semantic relationship queries completed in {elapsed_queries:.3f}s ({400 / elapsed_queries:.1f} queries/sec)"
+        )
         self.assertLess(elapsed_queries, 0.5, "Graph queries should complete in under 500ms")
 
     def test_02_subloop_execution_volume(self):
@@ -73,12 +75,16 @@ class TestMCPChainingStress(unittest.TestCase):
         for i in range(300):
             intent = "docs_lookup" if i % 2 == 0 else "investigation"
             seq_info = self.runner.generate_fuzz_sequence(intent=intent, is_mutation=False)
-            res = self.runner.execute_chain(f"Benchmark task iteration {i}", seq_info, allow_mutation=False)
+            res = self.runner.execute_chain(
+                f"Benchmark task iteration {i}", seq_info, allow_mutation=False
+            )
             self.assertEqual(res["status"], "SUCCESS")
             self.assertIn("synthesis", res)
             self.assertLessEqual(len(res["synthesis"]), MAX_HOOK_OUTPUT_CHARS)
         elapsed = time.time() - t0
-        print(f"[STRESS] 300 sub-loop chains executed in {elapsed:.3f}s ({300/elapsed:.1f} chains/sec)")
+        print(
+            f"[STRESS] 300 sub-loop chains executed in {elapsed:.3f}s ({300 / elapsed:.1f} chains/sec)"
+        )
         self.assertLess(elapsed, 1.0, "300 chains should execute in under 1 second")
 
     def test_03_two_tier_mutation_security_gate(self):
@@ -86,14 +92,18 @@ class TestMCPChainingStress(unittest.TestCase):
         seq_info = self.runner.generate_fuzz_sequence(intent="refactoring", is_mutation=True)
 
         # Attempt 1: Without explicit authorization -> must halt
-        res_blocked = self.runner.execute_chain("Modify database records", seq_info, allow_mutation=False)
+        res_blocked = self.runner.execute_chain(
+            "Modify database records", seq_info, allow_mutation=False
+        )
         steps = res_blocked["execution_steps"]
         halted_step = [s for s in steps if s.get("action") == "HALT_FOR_USER_APPROVAL"]
         self.assertEqual(len(halted_step), 1)
         self.assertIn("Two-Tier Policy", halted_step[0]["reason"])
 
         # Attempt 2: With explicit authorization -> proceeds
-        res_allowed = self.runner.execute_chain("Modify database records", seq_info, allow_mutation=True)
+        res_allowed = self.runner.execute_chain(
+            "Modify database records", seq_info, allow_mutation=True
+        )
         self.assertEqual(res_allowed["status"], "SUCCESS")
         self.assertEqual(len(res_allowed["execution_steps"]), 5)
 
@@ -103,7 +113,7 @@ class TestMCPChainingStress(unittest.TestCase):
             "'; DROP TABLE tools; --",
             "' OR '1'='1",
             "admin'--",
-            "tool\"; DELETE FROM tools; --",
+            'tool"; DELETE FROM tools; --',
         ]
         for bad_id in malicious_ids:
             # Onboard with malicious string as ID

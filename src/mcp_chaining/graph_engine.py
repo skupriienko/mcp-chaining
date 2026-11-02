@@ -15,6 +15,7 @@ from .mesh_db import get_db_path, init_db
 
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     HAS_NETWORKX = False
@@ -77,7 +78,7 @@ class SimpleMultiDiGraph:
 
     def edges(self, data: bool = False):
         all_edges = []
-        for _, out in self._adj.items():
+        for out in self._adj.values():
             for u, v, d in out:
                 if data:
                     all_edges.append((u, v, d))
@@ -100,7 +101,9 @@ class PortableToolGraph:
         self.db_path = db_path or get_db_path()
         if not self.db_path.exists():
             init_db(self.db_path)
-        self.graph = nx.MultiDiGraph() if (HAS_NETWORKX and nx is not None) else SimpleMultiDiGraph()
+        self.graph = (
+            nx.MultiDiGraph() if (HAS_NETWORKX and nx is not None) else SimpleMultiDiGraph()
+        )
         self.load()
 
     def get_conn(self) -> sqlite3.Connection:
@@ -148,13 +151,15 @@ class PortableToolGraph:
             for _, target, data in self.graph.out_edges(tool_id, data=True):
                 if data.get("relationship_type") in ("COMPLEMENTS", "PIPES_TO"):
                     target_data = self.graph.nodes.get(target, {})
-                    friends.append({
-                        "target_tool": target,
-                        "relationship": data.get("relationship_type"),
-                        "weight": data.get("weight"),
-                        "rationale": data.get("rationale"),
-                        "category": target_data.get("category", "unknown"),
-                    })
+                    friends.append(
+                        {
+                            "target_tool": target,
+                            "relationship": data.get("relationship_type"),
+                            "weight": data.get("weight"),
+                            "rationale": data.get("rationale"),
+                            "category": target_data.get("category", "unknown"),
+                        }
+                    )
         return friends
 
     def get_opponents(self, tool_id: str) -> list[dict[str, Any]]:
@@ -164,13 +169,15 @@ class PortableToolGraph:
             for _, target, data in self.graph.out_edges(tool_id, data=True):
                 if data.get("relationship_type") == "OPPOSES":
                     target_data = self.graph.nodes.get(target, {})
-                    opponents.append({
-                        "target_tool": target,
-                        "relationship": "OPPOSES",
-                        "weight": data.get("weight"),
-                        "rationale": data.get("rationale"),
-                        "category": target_data.get("category", "unknown"),
-                    })
+                    opponents.append(
+                        {
+                            "target_tool": target,
+                            "relationship": "OPPOSES",
+                            "weight": data.get("weight"),
+                            "rationale": data.get("rationale"),
+                            "category": target_data.get("category", "unknown"),
+                        }
+                    )
         return opponents
 
     def onboard_tool(
@@ -199,7 +206,16 @@ class PortableToolGraph:
                     INSERT OR REPLACE INTO tools (id, server_name, tool_name, category, description, read_only, sandbox_safe, capability_weight)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (tool_id, server_name, tool_name, category, description, int(read_only), int(sandbox_safe), float(capability_weight)),
+                    (
+                        tool_id,
+                        server_name,
+                        tool_name,
+                        category,
+                        description,
+                        int(read_only),
+                        int(sandbox_safe),
+                        float(capability_weight),
+                    ),
                 )
 
                 relationships_added = []
@@ -207,12 +223,44 @@ class PortableToolGraph:
 
                 # Inferred relationships
                 if "compute" in category_lower or "code" in category_lower:
-                    relationships_added.append((tool_id, "security/osvScanner", "OPPOSES", 1.9, "Automated vulnerability check on generated code"))
-                    relationships_added.append((tool_id, "clean_code/refactor_gate", "OPPOSES", 1.8, "Clean code review blocks premature abstractions"))
+                    relationships_added.append(
+                        (
+                            tool_id,
+                            "security/osvScanner",
+                            "OPPOSES",
+                            1.9,
+                            "Automated vulnerability check on generated code",
+                        )
+                    )
+                    relationships_added.append(
+                        (
+                            tool_id,
+                            "clean_code/refactor_gate",
+                            "OPPOSES",
+                            1.8,
+                            "Clean code review blocks premature abstractions",
+                        )
+                    )
                 elif "docs" in category_lower or "search" in category_lower:
-                    relationships_added.append((tool_id, "context-mode/ctx_execute", "COMPLEMENTS", 1.7, "Supplies signatures directly to sandbox execution"))
+                    relationships_added.append(
+                        (
+                            tool_id,
+                            "context-mode/ctx_execute",
+                            "COMPLEMENTS",
+                            1.7,
+                            "Supplies signatures directly to sandbox execution",
+                        )
+                    )
                 elif "security" in category_lower:
-                    relationships_added.append((tool_id, "mempalace/checkpoint", "COMPLEMENTS", 1.6, "Persists security audit sign-offs to memory"))
+                    relationships_added.append(
+                        (
+                            tool_id,
+                            "mempalace/checkpoint",
+                            "COMPLEMENTS",
+                            1.6,
+                            "Persists security audit sign-offs to memory",
+                        )
+                    )
 
                 for rel in relationships_added:
                     cur.execute(

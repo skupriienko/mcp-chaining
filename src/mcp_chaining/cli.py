@@ -33,7 +33,9 @@ def main():
     subparsers.add_parser("summary", help="Show tool graph topology and registered counts")
 
     # 3. friends
-    friends_p = subparsers.add_parser("friends", help="Find complementary partner tools (COMPLEMENTS)")
+    friends_p = subparsers.add_parser(
+        "friends", help="Find complementary partner tools (COMPLEMENTS)"
+    )
     friends_p.add_argument("tool", type=str, help="Tool ID (e.g. context-mode/ctx_execute)")
 
     # 4. opponents
@@ -41,13 +43,19 @@ def main():
     opponents_p.add_argument("tool", type=str, help="Tool ID (e.g. context-mode/ctx_execute)")
 
     # 5. onboard
-    onboard_p = subparsers.add_parser("onboard", help="Onboard and topologically register a new tool")
+    onboard_p = subparsers.add_parser(
+        "onboard", help="Onboard and topologically register a new tool"
+    )
     onboard_p.add_argument("--id", required=True, help="Tool unique ID (e.g. semgrep/scanner)")
     onboard_p.add_argument("--server", required=True, help="Server name or package")
     onboard_p.add_argument("--name", required=True, help="Tool function name")
-    onboard_p.add_argument("--category", required=True, help="Category (compute, search, security, etc.)")
+    onboard_p.add_argument(
+        "--category", required=True, help="Category (compute, search, security, etc.)"
+    )
     onboard_p.add_argument("--desc", required=True, help="Description of capability")
-    onboard_p.add_argument("--read-only", action="store_true", default=True, help="Whether tool is read-only")
+    onboard_p.add_argument(
+        "--read-only", action="store_true", default=True, help="Whether tool is read-only"
+    )
 
     # 6. run
     run_p = subparsers.add_parser("run", help="Execute an autonomous FSM sub-loop tool chain")
@@ -101,25 +109,30 @@ def main():
         print(json.dumps(result, indent=2, ensure_ascii=False))
 
     elif args.command == "benchmark":
-        print(json.dumps({
-            "metric": "MCP Tool Chaining vs Traditional Serial Calling",
-            "before_traditional_serial_calling": {
-                "token_consumption_per_task": "24,500 tokens (raw JSON/HTML in dialogue context)",
-                "conversational_turns": "4.5 turns per task",
-                "context_pollution_ratio": "100% of intermediate bytes in prompt",
-                "tool_graph_coordination": "None (Random trial-and-error sequential guessing)",
-                "critique_gate_enforcement": "0.0% (Unchecked mutations)",
-                "100_point_benchmark_score": "38.75 / 100"
-            },
-            "after_mcp_chaining": {
-                "token_consumption_per_task": "2,850 tokens (88.4% token reduction)",
-                "conversational_turns": "1.0 turn (atomic sandboxed sub-loop)",
-                "context_pollution_ratio": "0.0% (Clean derived synthesis only, <8000 chars)",
-                "tool_graph_coordination": "NetworkX MultiDiGraph (friends & opponents paired)",
-                "critique_gate_enforcement": "100.0% (Automated security & quality gates)",
-                "100_point_benchmark_score": "96.00 / 100 (+147.7% improvement)"
-            }
-        }, indent=2))
+        print(
+            json.dumps(
+                {
+                    "metric": "MCP Tool Chaining vs Traditional Serial Calling",
+                    "before_traditional_serial_calling": {
+                        "token_consumption_per_task": "24,500 tokens (raw JSON/HTML in dialogue context)",
+                        "conversational_turns": "4.5 turns per task",
+                        "context_pollution_ratio": "100% of intermediate bytes in prompt",
+                        "tool_graph_coordination": "None (Random trial-and-error sequential guessing)",
+                        "critique_gate_enforcement": "0.0% (Unchecked mutations)",
+                        "100_point_benchmark_score": "38.75 / 100",
+                    },
+                    "after_mcp_chaining": {
+                        "token_consumption_per_task": "2,850 tokens (88.4% token reduction)",
+                        "conversational_turns": "1.0 turn (atomic sandboxed sub-loop)",
+                        "context_pollution_ratio": "0.0% (Clean derived synthesis only, <8000 chars)",
+                        "tool_graph_coordination": "NetworkX MultiDiGraph (friends & opponents paired)",
+                        "critique_gate_enforcement": "100.0% (Automated security & quality gates)",
+                        "100_point_benchmark_score": "96.00 / 100 (+147.7% improvement)",
+                    },
+                },
+                indent=2,
+            )
+        )
 
 
 if __name__ == "__main__":

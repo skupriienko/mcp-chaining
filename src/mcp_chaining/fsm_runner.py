@@ -8,8 +8,6 @@ without conversational context pollution.
 
 from __future__ import annotations
 
-import json
-import sys
 import time
 from enum import StrEnum
 from pathlib import Path
@@ -47,7 +45,9 @@ class FSMSequenceRunner:
         self.db_path = db_path or get_db_path()
         self.graph = PortableToolGraph(self.db_path)
 
-    def generate_fuzz_sequence(self, intent: str = "investigation", is_mutation: bool = False) -> dict[str, Any]:
+    def generate_fuzz_sequence(
+        self, intent: str = "investigation", is_mutation: bool = False
+    ) -> dict[str, Any]:
         """Generate state sequence and evaluate capability vs consumption."""
         if intent == "docs_lookup":
             states = [FSMState.DOC_RESOLUTION, FSMState.SANDBOX_COMPUTE, FSMState.SYNTHESIS]
@@ -95,7 +95,9 @@ class FSMSequenceRunner:
             "mutation_required": is_mutation,
         }
 
-    def execute_chain(self, query: str, sequence_info: dict[str, Any], allow_mutation: bool = False) -> dict[str, Any]:
+    def execute_chain(
+        self, query: str, sequence_info: dict[str, Any], allow_mutation: bool = False
+    ) -> dict[str, Any]:
         """Execute the sub-loop tool sequence inside sandbox boundaries."""
         if not sequence_info["progress_check_passed"]:
             return {
@@ -109,21 +111,25 @@ class FSMSequenceRunner:
 
         for state_str, tool_id in zip(sequence_info["states"], sequence_info["tools_pipeline"]):
             if state_str == FSMState.MUTATION_PREPARE and not allow_mutation:
-                step_logs.append({
-                    "state": state_str,
-                    "tool": tool_id,
-                    "action": "HALT_FOR_USER_APPROVAL",
-                    "reason": "Two-Tier Policy: Write mutations require explicit user confirmation.",
-                })
+                step_logs.append(
+                    {
+                        "state": state_str,
+                        "tool": tool_id,
+                        "action": "HALT_FOR_USER_APPROVAL",
+                        "reason": "Two-Tier Policy: Write mutations require explicit user confirmation.",
+                    }
+                )
                 break
 
             result = self._run_tool(tool_id, payload)
-            step_logs.append({
-                "state": state_str,
-                "tool": tool_id,
-                "output_status": "SUCCESS",
-                "summary": result.get("summary", "Step executed in sandbox"),
-            })
+            step_logs.append(
+                {
+                    "state": state_str,
+                    "tool": tool_id,
+                    "output_status": "SUCCESS",
+                    "summary": result.get("summary", "Step executed in sandbox"),
+                }
+            )
             payload["last_result"] = result
 
         total_elapsed = round(time.time() - start_time, 3)
@@ -158,5 +164,5 @@ class FSMSequenceRunner:
         ]
         text = "\n".join(lines)
         if len(text) > MAX_HOOK_OUTPUT_CHARS:
-            text = text[:MAX_HOOK_OUTPUT_CHARS - 30] + "\n... [TRUNCATED_AT_8000]"
+            text = text[: MAX_HOOK_OUTPUT_CHARS - 30] + "\n... [TRUNCATED_AT_8000]"
         return text
