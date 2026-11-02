@@ -19,7 +19,7 @@ Install directly into any project on Linux, macOS, or WSL with one command:
 ```bash
 bash install.sh
 ```
-This single command installs the `mcp-chain` CLI, initializes the local SQLite FTS5 mesh, and **automatically integrates the sub-loop chaining rule into all popular AI tools** (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `.cursorrules`, `.cursor/rules/`, `.windsurfrules`, `.github/copilot-instructions.md`, `CONVENTIONS.md`).
+This single command installs the `mcp-chain` CLI, initializes the local SQLite FTS5 mesh, and **automatically integrates the sub-loop chaining rule into all popular AI tools** (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `.cursorrules`, `.cursor/rules/`, `.windsurfrules`, `.kilo/kilo.jsonc`, `.kilo/rules/`, `.kilocoderules`, `.github/copilot-instructions.md`, `CONVENTIONS.md`).
 
 ### 2. Standard Python Packaging (PEP 517 / 621)
 Install into your current virtual environment:

@@ -7,6 +7,7 @@
 # - Gemini CLI & Antigravity (GEMINI.md, AGENTS.md)
 # - Cursor (.cursorrules, .cursor/rules/mcp-chaining.mdc)
 # - Windsurf (.windsurfrules)
+# - Kilo / KiloCode (.kilo/kilo.jsonc, .kilo/rules/mcp-chaining.md, .kilocoderules)
 # - GitHub Copilot (.github/copilot-instructions.md)
 # - Aider / OpenCode (CONVENTIONS.md, .aider.conf.yml)
 #
@@ -119,6 +120,34 @@ Enforce the capability invariant ($L_c \le L_d$) and two-tier mutation security.
 EOF
 log_ok "[Cursor MDC] Rule created -> ${CURSOR_MDC}"
 
+# Kilo / KiloCode integration (.kilo/kilo.jsonc and .kilo/rules/mcp-chaining.md)
+KILO_DIR="${TARGET_DIR}/.kilo"
+mkdir -p "${KILO_DIR}/rules"
+KILO_CONFIG="${KILO_DIR}/kilo.jsonc"
+if [[ ! -f "${KILO_CONFIG}" ]]; then
+    cat <<'EOF' > "${KILO_CONFIG}"
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "instructions": [
+    ".kilo/rules/*.md"
+  ]
+}
+EOF
+fi
+
+cat <<'EOF' > "${KILO_DIR}/rules/mcp-chaining.md"
+# MCP Sub-Loop Chaining Rule
+
+When executing multi-tool workflows, always use `mcp-chain run "<query>"` to avoid context saturation.
+- Intermediate tool outputs stay in sandbox sub-loops.
+- Enforce capability invariant ($L_c <= L_d$).
+- Two-tier security: write mutations halt for user confirmation.
+EOF
+log_ok "[Kilo / KiloCode] Rule created -> ${KILO_DIR}/rules/mcp-chaining.md"
+
+# KiloCode legacy compatibility (.kilocoderules)
+append_rule "${TARGET_DIR}/.kilocoderules" "KiloCode Legacy"
+
 # 5. Output receipt
 cat <<RECEIPT
 
@@ -136,6 +165,7 @@ cat <<RECEIPT
     • Gemini / AGY     : ${TARGET_DIR}/GEMINI.md & AGENTS.md
     • Cursor           : ${TARGET_DIR}/.cursorrules & ${CURSOR_MDC}
     • Windsurf         : ${TARGET_DIR}/.windsurfrules
+    • Kilo / KiloCode  : ${KILO_DIR}/kilo.jsonc & ${KILO_DIR}/rules/mcp-chaining.md
     • GitHub Copilot   : ${TARGET_DIR}/.github/copilot-instructions.md
     • Aider / OpenCode : ${TARGET_DIR}/CONVENTIONS.md
 - Database: ${TARGET_DIR}/.mesh/tool_mesh.db
