@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](pyproject.toml)
 [![CI](https://github.com/skupriienko/mcp-chaining/actions/workflows/ci.yml/badge.svg)](https://github.com/skupriienko/mcp-chaining/actions)
+[![AI Tools: Kilo | Claude | Cursor | Windsurf](https://img.shields.io/badge/AI%20Tools-Kilo%20%7C%20Claude%20%7C%20Cursor%20%7C%20Windsurf-blueviolet.svg)](#-native-ai-tools--kilo--kilocode-integration)
 [![Token Savings: ~90%](https://img.shields.io/badge/Token%20Savings-~90%25-brightgreen.svg)](#-proven-metrics-before-vs-after)
 [![Zero-Dependency Core](https://img.shields.io/badge/Dependencies-Zero%20Stdlib-green.svg)](pyproject.toml)
 
@@ -112,6 +113,22 @@ mcp-chain benchmark
 ```
 
 See [`examples/USAGE_EXAMPLES.md`](examples/USAGE_EXAMPLES.md) for detailed operational walkthroughs.
+
+---
+
+## 🤖 Native AI Tools & Kilo / KiloCode Integration
+
+MCP Chaining out-of-the-box configures all major AI coding assistants and agent environments:
+
+| AI Platform / Assistant | Configuration Files | Injected Capability & Security |
+| :--- | :--- | :--- |
+| **Kilo / KiloCode** | `.kilo/kilo.jsonc`<br>`.kilo/rules/mcp-chaining.md`<br>`.kilocoderules` | Automatic instruction discovery, multi-step sub-loop chaining, capability invariant enforcement ($L_c \le L_d$) |
+| **Claude Code** | `CLAUDE.md` | Intercepts serial tool proliferation; returns clean derived synthesis (<8,000 chars) |
+| **Cursor** | `.cursor/rules/mcp-chaining.mdc`<br>`.cursorrules` | Modern MDC rule with glob auto-application across workspace edits |
+| **Windsurf Cascade** | `.windsurfrules` | Cascade reasoning context protection |
+| **Gemini CLI / AGY** | `GEMINI.md`<br>`AGENTS.md` | Single-turn atomic execution gate |
+| **GitHub Copilot** | `.github/copilot-instructions.md` | Workspace instruction compliance |
+| **Aider / OpenCode** | `CONVENTIONS.md` | Non-interactive sub-loop runner |
 
 ---
 
