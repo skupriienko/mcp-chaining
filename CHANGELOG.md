@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 with secondary CalVer release tracking (`YYYY.MM.DD.N`).
 
+## [1.1.0] - 2026-11-03 (CalVer: 2026.11.03.1)
+
+### Changed
+- Refactored `PortableToolGraph` and `FSMSubLoopRunner` with typed dataclasses and topological cycle protection.
+- Hardened two-tier mutation security gate against adversarial SQL injection and context pollution.
+- All 6 stress benchmarks passed under high load in <2.5s.
+
 ## [1.0.0] - 2026-11-02 (CalVer: 2026.11.02.1)
 
 ### Added
