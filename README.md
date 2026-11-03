@@ -116,6 +116,24 @@ See [`examples/USAGE_EXAMPLES.md`](examples/USAGE_EXAMPLES.md) for detailed oper
 
 ---
 
+## 🐍 Python API
+
+```python
+from mcp_chaining import PortableToolGraph, FSMSequenceRunner
+
+# Query tool mesh
+graph = PortableToolGraph()
+friends = graph.get_friends("context-mode/ctx_execute")
+print(f"Complements: {[f['id'] for f in friends]}")
+
+# Execute autonomous FSM sub-loop
+runner = FSMSequenceRunner(graph=graph)
+result = runner.run_subloop("Audit dependencies for security vulnerabilities")
+print(result["synthesis"])
+```
+
+---
+
 ## 🤖 Native AI Tools & Kilo / KiloCode Integration
 
 MCP Chaining out-of-the-box configures all major AI coding assistants and agent environments:
