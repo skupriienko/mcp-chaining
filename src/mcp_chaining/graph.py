@@ -11,7 +11,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-from .mesh_db import get_db_path, init_db
+from .db import get_db_path, init_db
 
 try:
     import networkx as nx

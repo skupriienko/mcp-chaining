@@ -17,9 +17,9 @@ SRC_DIR = Path(__file__).resolve().parent.parent / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from mcp_chaining.fsm_runner import MAX_HOOK_OUTPUT_CHARS, FSMSequenceRunner
-from mcp_chaining.graph_engine import PortableToolGraph
-from mcp_chaining.mesh_db import init_db
+from mcp_chaining.db import init_db
+from mcp_chaining.graph import PortableToolGraph
+from mcp_chaining.runner import MAX_HOOK_OUTPUT_CHARS, FSMSequenceRunner
 
 
 class TestMCPChainingStress(unittest.TestCase):
