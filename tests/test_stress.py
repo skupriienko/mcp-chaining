@@ -160,6 +160,70 @@ class TestMCPChainingStress(unittest.TestCase):
         self.assertEqual(res["status"], "REJECTED")
         self.assertIn("Capability Invariant violated", res["reason"])
 
+    def test_07_filament_sliding_window_levels(self):
+        """Filament Thread: Verify configurable backward & forward sliding window inspection."""
+        seq_info = self.runner.generate_fuzz_sequence(intent="investigation", is_mutation=False)
+        # Sequence has 5 states: REASONING -> DOC -> COMPUTE -> CRITIQUE -> SYNTHESIS
+        self.assertEqual(len(seq_info["tools_pipeline"]), 5)
+
+        # Run with backward_levels=2 and forward_levels=2
+        res = self.runner.execute_chain(
+            "Test query for filament window",
+            seq_info,
+            backward_levels=2,
+            forward_levels=2,
+        )
+        self.assertEqual(res["status"], "SUCCESS")
+        self.assertIn("filament_telemetry", res)
+        self.assertEqual(len(res["filament_telemetry"]), 5)
+
+        steps = res["execution_steps"]
+        # Step 0: past=0, current=REASONING, future=2 (DOC, COMPUTE)
+        w0 = steps[0]["window"]
+        self.assertEqual(len(w0["past"]), 0)
+        self.assertEqual(w0["current"]["tool_id"], seq_info["tools_pipeline"][0])
+        self.assertEqual(len(w0["future"]), 2)
+        self.assertEqual(w0["future"][0]["tool_id"], seq_info["tools_pipeline"][1])
+        self.assertEqual(w0["future"][1]["tool_id"], seq_info["tools_pipeline"][2])
+
+        # Step 2: past=2 (REASONING, DOC), current=COMPUTE, future=2 (CRITIQUE, SYNTHESIS)
+        w2 = steps[2]["window"]
+        self.assertEqual(len(w2["past"]), 2)
+        self.assertEqual(w2["past"][0]["tool_id"], seq_info["tools_pipeline"][0])
+        self.assertEqual(w2["past"][1]["tool_id"], seq_info["tools_pipeline"][1])
+        self.assertEqual(w2["current"]["tool_id"], seq_info["tools_pipeline"][2])
+        self.assertEqual(len(w2["future"]), 2)
+
+        # Verify SYMBIOS syntax glyphs in signals
+        sig2 = steps[2]["symbios_signal"]
+        self.assertIn("[SYMBIOS::FILAMENT]", sig2)
+        self.assertIn("⟲", sig2)  # Backward glyph
+        self.assertIn("●", sig2)  # Active node glyph
+        self.assertIn("◈", sig2)  # Sovereign agent glyph
+        self.assertIn("⤑", sig2)  # Flow glyph
+        self.assertIn("◎", sig2)  # Horizon target glyph
+        self.assertIn("∷ OK", sig2)  # Invariant gate
+        self.assertIn("∅[", sig2)  # Via Negativa savings
+
+    def test_08_live_signals_callback(self):
+        """Filament Telemetry: Live real-time callback emission and thread persistence."""
+        seq_info = self.runner.generate_fuzz_sequence(intent="docs_lookup", is_mutation=False)
+        captured_signals = []
+
+        def on_signal(sig: str):
+            captured_signals.append(sig)
+
+        res = self.runner.execute_chain(
+            "Live streaming telemetry test",
+            seq_info,
+            backward_levels=1,
+            forward_levels=1,
+            signal_callback=on_signal,
+        )
+        self.assertEqual(len(captured_signals), len(seq_info["tools_pipeline"]))
+        self.assertEqual(captured_signals, res["filament_telemetry"])
+        self.assertIn("SYMBIOS Filament Telemetry", res["synthesis"])
+
 
 if __name__ == "__main__":
     unittest.main()

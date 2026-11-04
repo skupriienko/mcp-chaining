@@ -9,12 +9,19 @@ without conversational context pollution.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from .db import get_db_path
-from .graph import PortableToolGraph
+try:
+    from .db import get_db_path
+    from .filament import NodeStatus, ToolFilamentThread
+    from .graph import PortableToolGraph
+except ImportError:
+    from db import get_db_path  # type: ignore[no-redef]
+    from filament import NodeStatus, ToolFilamentThread  # type: ignore[no-redef]
+    from graph import PortableToolGraph  # type: ignore[no-redef]
 
 MAX_HOOK_OUTPUT_CHARS = 8000
 
@@ -96,9 +103,15 @@ class FSMSequenceRunner:
         }
 
     def execute_chain(
-        self, query: str, sequence_info: dict[str, Any], allow_mutation: bool = False
+        self,
+        query: str,
+        sequence_info: dict[str, Any],
+        allow_mutation: bool = False,
+        backward_levels: int = 1,
+        forward_levels: int = 2,
+        signal_callback: Callable[[str], None] | None = None,
     ) -> dict[str, Any]:
-        """Execute the sub-loop tool sequence inside sandbox boundaries."""
+        """Execute the sub-loop tool sequence inside sandbox boundaries with filament tracking."""
         if not sequence_info["progress_check_passed"]:
             return {
                 "status": "REJECTED",
@@ -109,31 +122,59 @@ class FSMSequenceRunner:
         step_logs = []
         payload = {"query": query}
 
-        for state_str, tool_id in zip(sequence_info["states"], sequence_info["tools_pipeline"]):
+        filament = ToolFilamentThread(
+            tools_pipeline=sequence_info["tools_pipeline"],
+            states=sequence_info["states"],
+            backward_levels=backward_levels,
+            forward_levels=forward_levels,
+            token_saving_ratio=sequence_info.get("token_saving_ratio", 0.0),
+            signal_callback=signal_callback,
+        )
+
+        for idx, (state_str, tool_id) in enumerate(
+            zip(sequence_info["states"], sequence_info["tools_pipeline"])
+        ):
+            window, symbios_signal = filament.step(idx)
+
             if state_str == FSMState.MUTATION_PREPARE and not allow_mutation:
+                halt_reason = "Two-Tier Policy: Write mutations require explicit user confirmation."
+                filament.complete_step(idx, status=NodeStatus.HALTED, summary=halt_reason)
                 step_logs.append(
                     {
                         "state": state_str,
                         "tool": tool_id,
                         "action": "HALT_FOR_USER_APPROVAL",
-                        "reason": "Two-Tier Policy: Write mutations require explicit user confirmation.",
+                        "reason": halt_reason,
+                        "symbios_signal": symbios_signal,
                     }
                 )
                 break
 
+            t_step0 = time.time()
             result = self._run_tool(tool_id, payload)
+            dur_ms = (time.time() - t_step0) * 1000
+
+            step_summary = result.get("summary", "Step executed in sandbox")
+            filament.complete_step(
+                idx, status=NodeStatus.EXECUTED, summary=step_summary, duration_ms=dur_ms
+            )
+
             step_logs.append(
                 {
                     "state": state_str,
                     "tool": tool_id,
                     "output_status": "SUCCESS",
-                    "summary": result.get("summary", "Step executed in sandbox"),
+                    "summary": step_summary,
+                    "symbios_signal": symbios_signal,
+                    "window": window.to_dict(),
                 }
             )
             payload["last_result"] = result
 
         total_elapsed = round(time.time() - start_time, 3)
-        synthesis = self._synthesize(query, step_logs, payload.get("last_result", {}))
+        synthesis = self._synthesize(
+            query, step_logs, payload.get("last_result", {}), filament.telemetry_history
+        )
 
         return {
             "status": "SUCCESS",
@@ -143,6 +184,8 @@ class FSMSequenceRunner:
             "tokens_saved_ratio": sequence_info["token_saving_ratio"],
             "progress_margin": sequence_info["progress_margin"],
             "latency_sec": total_elapsed,
+            "filament_telemetry": filament.telemetry_history,
+            "filament_thread": filament.to_dict(),
             "synthesis": synthesis,
         }
 
@@ -152,7 +195,13 @@ class FSMSequenceRunner:
             "summary": f"Executed sub-loop step {tool_id} safely in sandbox.",
         }
 
-    def _synthesize(self, query: str, logs: list[dict[str, Any]], last_res: dict[str, Any]) -> str:
+    def _synthesize(
+        self,
+        query: str,
+        logs: list[dict[str, Any]],
+        last_res: dict[str, Any],
+        telemetry: list[str] | None = None,
+    ) -> str:
         pipeline_str = " -> ".join([item["state"] for item in logs])
         lines = [
             "[SUB-LOOP DERIVED SYNTHESIS]",
@@ -162,6 +211,11 @@ class FSMSequenceRunner:
             "Zero Context Pollution: Intermediate bytes suppressed from conversational tokens.",
             "Quality & Safety Gates: Clean",
         ]
+        if telemetry:
+            lines.append(f"SYMBIOS Filament Telemetry ({len(telemetry)} signals):")
+            for sig in telemetry:
+                lines.append(f"  {sig}")
+
         text = "\n".join(lines)
         if len(text) > MAX_HOOK_OUTPUT_CHARS:
             text = text[: MAX_HOOK_OUTPUT_CHARS - 30] + "\n... [TRUNCATED_AT_8000]"

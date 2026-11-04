@@ -68,6 +68,25 @@ def main():
         choices=["investigation", "docs_lookup", "refactoring", "general"],
     )
     run_p.add_argument("--mutate", "-m", action="store_true", help="Authorize state mutation gate")
+    run_p.add_argument(
+        "--backward",
+        "-b",
+        type=int,
+        default=1,
+        help="Depth of backward levels in filament thread window (default: 1)",
+    )
+    run_p.add_argument(
+        "--forward",
+        "-f",
+        type=int,
+        default=2,
+        help="Depth of forward levels in filament thread window (default: 2)",
+    )
+    run_p.add_argument(
+        "--signals",
+        action="store_true",
+        help="Emit live SYMBIOS resonant telemetry signals during stepping",
+    )
 
     # 7. benchmark
     subparsers.add_parser("benchmark", help="Output before/after reliability metrics")
@@ -105,7 +124,15 @@ def main():
     elif args.command == "run":
         runner = FSMSequenceRunner()
         seq_info = runner.generate_fuzz_sequence(intent=args.intent, is_mutation=args.mutate)
-        result = runner.execute_chain(args.query, seq_info, allow_mutation=args.mutate)
+        callback = (lambda sig: print(sig, file=sys.stderr)) if args.signals else None
+        result = runner.execute_chain(
+            args.query,
+            seq_info,
+            allow_mutation=args.mutate,
+            backward_levels=args.backward,
+            forward_levels=args.forward,
+            signal_callback=callback,
+        )
         print(json.dumps(result, indent=2, ensure_ascii=False))
 
     elif args.command == "benchmark":

@@ -105,14 +105,37 @@ mcp-chain friends context7/query-docs
 # 4. Discover adversarial critique gates
 mcp-chain opponents context-mode/ctx_execute
 
-# 5. Execute an autonomous FSM sub-loop
-mcp-chain run "Investigate security blast radius for auth dependency" --intent investigation
+# 5. Execute an autonomous FSM sub-loop with live SYMBIOS filament signals
+mcp-chain run "Investigate security blast radius for auth dependency" --intent investigation --backward 2 --forward 2 --signals
 
 # 6. Run 100-point benchmark evaluation
 mcp-chain benchmark
 ```
 
 See [`examples/USAGE_EXAMPLES.md`](examples/USAGE_EXAMPLES.md) for detailed operational walkthroughs.
+
+---
+
+## 🧶 Filament Thread & SYMBIOS Telemetry
+
+MCP Chaining features a dynamic **Filament Thread** with configurable sliding-window inspection (`--backward`, `--forward`) emitting ultra-dense **SYMBIOS** resonant signals:
+
+```bash
+# Run sub-loop with live SYMBIOS telemetry streaming:
+mcp-chain run "Audit dependencies and optimize AST" --backward 2 --forward 2 --signals
+```
+
+### SYMBIOS Signal Grammar:
+* `⟲[-k:tool]` — Backward historical tools ($k$ steps prior).
+* `●[0:tool]◈` — Current sovereign executing tool node.
+* `⤑` — Dynamic execution flow.
+* `◎[+m:tool]` — Horizon target tools ($m$ steps ahead).
+* `∷ OK` — Invariant safety gate checkpoint.
+* `∅[-88% ctx]` — Via Negativa token compression.
+
+```text
+[SYMBIOS::FILAMENT] ⟲[-2:sequential] ⟲[-1:query-docs] ⤑ ●[0:ctx_execute]◈ ⤑ ◎[+1:osvScanner] > ◎[+2:ctx_search] ∷ OK ∅[-88% ctx]
+```
 
 ---
 
