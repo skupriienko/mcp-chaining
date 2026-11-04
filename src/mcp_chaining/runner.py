@@ -212,7 +212,7 @@ class FSMSequenceRunner:
             "Quality & Safety Gates: Clean",
         ]
         if telemetry:
-            lines.append(f"SYMBIOS Filament Telemetry ({len(telemetry)} signals):")
+            lines.append(f"SYN-TEX Filament Telemetry ({len(telemetry)} signals):")
             for sig in telemetry:
                 lines.append(f"  {sig}")
 

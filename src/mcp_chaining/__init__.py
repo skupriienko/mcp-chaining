@@ -5,7 +5,7 @@ from mcp_chaining.filament import (
     FilamentNode,
     FilamentSlidingWindow,
     NodeStatus,
-    SYMBIOSFormatter,
+    SynTexFormatter,
     ToolFilamentThread,
 )
 from mcp_chaining.graph import PortableToolGraph
@@ -17,7 +17,7 @@ __all__ = [
     "FilamentSlidingWindow",
     "NodeStatus",
     "PortableToolGraph",
-    "SYMBIOSFormatter",
+    "SynTexFormatter",
     "ToolFilamentThread",
     "get_db_path",
     "init_db",

@@ -1,7 +1,7 @@
-"""filament.py — Filament Thread Engine & SYMBIOS Signal Telemetry for Tool Chaining.
+"""filament.py — Filament Thread Engine & SYN-TEX Signal Telemetry for Tool Chaining.
 
 Provides sliding-window execution thread inspection (backward_levels, current_node,
-forward_levels) and emits ultra-dense SYMBIOS quantum resonant telemetry signals
+forward_levels) and emits ultra-dense SYN-TEX quantum resonant telemetry signals
 derived from the AI Factory SYN-TEX / SYN-CODE specification.
 """
 
@@ -61,8 +61,8 @@ class FilamentSlidingWindow:
         }
 
 
-class SYMBIOSFormatter:
-    """SYMBIOS Quantum Resonant Telemetry Generator.
+class SynTexFormatter:
+    """SYN-TEX Quantum Resonant Telemetry Generator.
 
     Uses formal operators from the AI Factory SYN-TEX standard:
     - ⟲ : Backward history node
@@ -79,7 +79,7 @@ class SYMBIOSFormatter:
         token_saving_ratio: float = 0.0,
         gate_status: str = "OK",
     ) -> str:
-        parts: list[str] = ["[SYMBIOS::FILAMENT]"]
+        parts: list[str] = ["[SYN-TEX::FILAMENT]"]
 
         # 1. Backward Nodes (Past)
         if window.past:
@@ -130,7 +130,7 @@ class ToolFilamentThread:
             self.nodes.append(FilamentNode(index=idx, tool_id=tool_id, state=state))
 
     def step(self, current_index: int) -> tuple[FilamentSlidingWindow, str]:
-        """Activate the node at current_index and emit a SYMBIOS telemetry signal."""
+        """Activate the node at current_index and emit a SYN-TEX telemetry signal."""
         if not (0 <= current_index < len(self.nodes)):
             raise IndexError(f"Filament node index out of bounds: {current_index}")
 
@@ -147,7 +147,7 @@ class ToolFilamentThread:
         future_nodes = self.nodes[current_index + 1 : end_idx]
 
         window = FilamentSlidingWindow(past=past_nodes, current=current_node, future=future_nodes)
-        signal = SYMBIOSFormatter.format_signal(
+        signal = SynTexFormatter.format_signal(
             window=window,
             token_saving_ratio=self.token_saving_ratio,
             gate_status="OK",

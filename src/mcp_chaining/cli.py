@@ -85,7 +85,7 @@ def main():
     run_p.add_argument(
         "--signals",
         action="store_true",
-        help="Emit live SYMBIOS resonant telemetry signals during stepping",
+        help="Emit live SYN-TEX resonant telemetry signals during stepping",
     )
 
     # 7. benchmark

@@ -194,9 +194,9 @@ class TestMCPChainingStress(unittest.TestCase):
         self.assertEqual(w2["current"]["tool_id"], seq_info["tools_pipeline"][2])
         self.assertEqual(len(w2["future"]), 2)
 
-        # Verify SYMBIOS syntax glyphs in signals
+        # Verify SYN-TEX syntax glyphs in signals
         sig2 = steps[2]["symbios_signal"]
-        self.assertIn("[SYMBIOS::FILAMENT]", sig2)
+        self.assertIn("[SYN-TEX::FILAMENT]", sig2)
         self.assertIn("⟲", sig2)  # Backward glyph
         self.assertIn("●", sig2)  # Active node glyph
         self.assertIn("◈", sig2)  # Sovereign agent glyph
@@ -222,7 +222,7 @@ class TestMCPChainingStress(unittest.TestCase):
         )
         self.assertEqual(len(captured_signals), len(seq_info["tools_pipeline"]))
         self.assertEqual(captured_signals, res["filament_telemetry"])
-        self.assertIn("SYMBIOS Filament Telemetry", res["synthesis"])
+        self.assertIn("SYN-TEX Filament Telemetry", res["synthesis"])
 
 
 if __name__ == "__main__":
