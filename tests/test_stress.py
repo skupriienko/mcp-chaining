@@ -263,6 +263,59 @@ class TestMCPChainingStress(unittest.TestCase):
         self.assertIn("●[0:context-mode/ctx_execute_file]◈", sig)
         self.assertIn("∅[-88% ctx]", sig)
 
+    def test_10_security_defense_in_depth(self):
+        """Verify comprehensive security defenses: PRAGMA, input validation, CWE-117, DoS."""
+        # 1. Null byte and invalid identifier rejection
+        with self.assertRaises(ValueError):
+            self.graph.onboard_tool(
+                tool_id="bad\0tool",
+                server_name="srv",
+                tool_name="tool",
+                category="compute",
+                description="desc",
+            )
+
+        with self.assertRaises(ValueError):
+            self.graph.add_relationship(
+                source_tool="tool_a",
+                target_tool="tool_b",
+                relationship="DROP TABLE tools;--",
+            )
+
+        # 2. NaN and Inf weight rejection
+        with self.assertRaises(ValueError):
+            self.graph.add_relationship(
+                source_tool="tool_a",
+                target_tool="tool_b",
+                relationship="COMPLEMENTS",
+                weight=float("nan"),
+            )
+
+        with self.assertRaises(ValueError):
+            self.graph.add_relationship(
+                source_tool="tool_a",
+                target_tool="tool_b",
+                relationship="COMPLEMENTS",
+                weight=float("inf"),
+            )
+
+        # 3. SYN-TEX Delimiter Injection Prevention (CWE-117)
+        malicious_node = "safe_tool\n[INJECTED_SIGNAL] ∷ EVIL"
+        thread = ToolFilamentThread(
+            tools_pipeline=[malicious_node],
+            states=["S1_TEST"],
+            backward_levels=1,
+            forward_levels=1,
+        )
+        _, sig = thread.step(0)
+        self.assertNotIn("\n", sig)
+        self.assertNotIn("[INJECTED_SIGNAL]", sig)
+
+        # 4. Excessive query length rejection (DoS prevention)
+        seq = self.runner.generate_fuzz_sequence("investigation")
+        with self.assertRaises(ValueError):
+            self.runner.execute_chain("A" * 70000, seq)
+
 
 if __name__ == "__main__":
     unittest.main()

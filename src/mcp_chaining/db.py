@@ -16,14 +16,24 @@ DEFAULT_MESH_DB = DEFAULT_MESH_DIR / "tool_mesh.db"
 
 
 def get_db_path() -> Path:
-    """Resolve database path from environment or default local project directory."""
+    """Resolve database path from environment or default local project directory with security checks."""
     env_path = os.getenv("TOOL_CHAIN_DB")
     if env_path:
-        p = Path(env_path)
+        if "\0" in env_path:
+            raise ValueError("Security violation: null byte detected in TOOL_CHAIN_DB path")
+        p = Path(env_path).resolve()
         p.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            p.parent.chmod(0o700)
+        except OSError:
+            pass
         return p
     DEFAULT_MESH_DIR.mkdir(parents=True, exist_ok=True)
-    return DEFAULT_MESH_DB
+    try:
+        DEFAULT_MESH_DIR.chmod(0o700)
+    except OSError:
+        pass
+    return DEFAULT_MESH_DB.resolve()
 
 
 SCHEMA_SQL = """
@@ -266,42 +276,53 @@ SEEDED_SEQUENCES = [
 
 
 def init_db(db_path: Path | None = None) -> Path:
-    """Initialize database schema and seed default nodes and edges."""
+    """Initialize database schema, enforce PRAGMAs, and seed default nodes and edges securely."""
     p = db_path or get_db_path()
-    conn = sqlite3.connect(p)
-    cur = conn.cursor()
+    conn = sqlite3.connect(p, timeout=15.0)
+    try:
+        cur = conn.cursor()
+        cur.execute("PRAGMA foreign_keys = ON;")
+        cur.execute("PRAGMA journal_mode = WAL;")
+        cur.execute("PRAGMA synchronous = NORMAL;")
+        cur.execute("PRAGMA busy_timeout = 5000;")
+        cur.executescript(SCHEMA_SQL)
 
-    cur.executescript(SCHEMA_SQL)
+        for item in SEEDED_TOOLS:
+            cur.execute(
+                """
+                INSERT OR IGNORE INTO tools (id, server_name, tool_name, category, description, read_only, sandbox_safe, capability_weight)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                item,
+            )
 
-    for item in SEEDED_TOOLS:
-        cur.execute(
-            """
-            INSERT OR IGNORE INTO tools (id, server_name, tool_name, category, description, read_only, sandbox_safe, capability_weight)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            item,
-        )
+        for rel in SEEDED_RELATIONSHIPS:
+            cur.execute(
+                """
+                INSERT OR IGNORE INTO tool_relationships (source_tool_id, target_tool_id, relationship_type, weight, rationale)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                rel,
+            )
 
-    for rel in SEEDED_RELATIONSHIPS:
-        cur.execute(
-            """
-            INSERT OR IGNORE INTO tool_relationships (source_tool_id, target_tool_id, relationship_type, weight, rationale)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            rel,
-        )
+        for seq in SEEDED_SEQUENCES:
+            cur.execute(
+                """
+                INSERT OR REPLACE INTO golden_sequences (intent, fsm_sequence, tool_pipeline, estimated_token_saving, benchmark_score)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                seq,
+            )
 
-    for seq in SEEDED_SEQUENCES:
-        cur.execute(
-            """
-            INSERT OR REPLACE INTO golden_sequences (intent, fsm_sequence, tool_pipeline, estimated_token_saving, benchmark_score)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            seq,
-        )
+        conn.commit()
+    finally:
+        conn.close()
 
-    conn.commit()
-    conn.close()
+    try:
+        p.chmod(0o600)
+    except OSError:
+        pass
+
     return p
 
 

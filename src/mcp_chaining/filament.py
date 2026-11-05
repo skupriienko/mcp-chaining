@@ -97,6 +97,11 @@ class FilamentSlidingWindow:
         }
 
 
+def _clean_token(t: str) -> str:
+    """Sanitize identifier to prevent SYN-TEX signal delimiter injection (CWE-117)."""
+    return "".join(ch for ch in str(t) if ch not in "\r\n\t[]⑂●◈∷∅")[:64]
+
+
 class SynTexFormatter:
     """SYN-TEX Quantum Resonant Telemetry Generator for Quipu Filaments.
 
@@ -123,18 +128,21 @@ class SynTexFormatter:
         if window.past:
             past_strs = []
             for offset, n in enumerate(reversed(window.past), 1):
-                past_strs.append(f"⟲[-{offset}:{n.tool_id}]")
+                clean_id = _clean_token(n.tool_id)
+                past_strs.append(f"⟲[-{offset}:{clean_id}]")
             parts.append(" ".join(reversed(past_strs)))
             parts.append("⤑")
 
         # 2. Current Node (Active sovereign knot)
-        parts.append(f"●[0:{window.current.tool_id}]◈")
+        clean_curr = _clean_token(window.current.tool_id)
+        parts.append(f"●[0:{clean_curr}]◈")
 
         # 2b. Quipu Branches / Pendants (Auxiliary cords)
         if include_branches and window.current.branches:
             branch_tokens = []
             for b in window.current.branches[:3]:  # Top 3 salient branches
-                branch_tokens.append(f"⑂{b.kind.value[:3]}~{b.tool_id}({b.affinity:.1f})")
+                clean_b_id = _clean_token(b.tool_id)
+                branch_tokens.append(f"⑂{b.kind.value[:3]}~{clean_b_id}({b.affinity:.1f})")
             parts.append(f"[{' '.join(branch_tokens)}]")
 
         # 3. Forward Nodes (Future knots on the main cord)
@@ -142,12 +150,14 @@ class SynTexFormatter:
             parts.append("⤑")
             future_strs = []
             for offset, n in enumerate(window.future, 1):
-                future_strs.append(f"◎[+{offset}:{n.tool_id}]")
+                clean_f_id = _clean_token(n.tool_id)
+                future_strs.append(f"◎[+{offset}:{clean_f_id}]")
             parts.append(" > ".join(future_strs))
 
         # 4. Invariant Gate & Token Compression
         savings_pct = int(token_saving_ratio * 100) if token_saving_ratio > 0 else 0
-        parts.append(f"∷ {gate_status} ∅[-{savings_pct}% ctx]")
+        clean_gate = _clean_token(gate_status)
+        parts.append(f"∷ {clean_gate} ∅[-{savings_pct}% ctx]")
 
         return " ".join(parts)
 

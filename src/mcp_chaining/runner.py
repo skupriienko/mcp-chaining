@@ -112,10 +112,18 @@ class FSMSequenceRunner:
         signal_callback: Callable[[str], None] | None = None,
     ) -> dict[str, Any]:
         """Execute the sub-loop tool sequence inside sandbox boundaries with filament tracking."""
-        if not sequence_info["progress_check_passed"]:
+        if not isinstance(query, str):
+            raise TypeError("Security violation: query must be a string")
+        if len(query) > 65536:
+            raise ValueError("Security violation: query exceeds 65536 characters limit")
+
+        if not sequence_info.get("progress_check_passed"):
             return {
                 "status": "REJECTED",
-                "reason": "Capability Invariant violated: L_c > L_d (Resource consumption exceeds capability).",
+                "reason": (
+                    "Capability Invariant violated: L_c > L_d (Resource consumption exceeds"
+                    " capability)."
+                ),
             }
 
         start_time = time.time()
@@ -133,7 +141,7 @@ class FSMSequenceRunner:
         )
 
         for idx, (state_str, tool_id) in enumerate(
-            zip(sequence_info["states"], sequence_info["tools_pipeline"])
+            zip(sequence_info["states"], sequence_info["tools_pipeline"], strict=False)
         ):
             window, symbios_signal = filament.step(idx)
 

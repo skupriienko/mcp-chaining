@@ -11,13 +11,19 @@ import json
 import sys
 from pathlib import Path
 
+# Support direct execution without PYTHONPATH setup
 SRC_DIR = Path(__file__).resolve().parent.parent
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from mcp_chaining.db import init_db
-from mcp_chaining.graph import PortableToolGraph
-from mcp_chaining.runner import FSMSequenceRunner
+try:
+    from .db import init_db
+    from .graph import PortableToolGraph
+    from .runner import FSMSequenceRunner
+except ImportError:
+    from mcp_chaining.db import init_db  # type: ignore[no-redef]
+    from mcp_chaining.graph import PortableToolGraph  # type: ignore[no-redef]
+    from mcp_chaining.runner import FSMSequenceRunner  # type: ignore[no-redef]
 
 
 def main():

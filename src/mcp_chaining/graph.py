@@ -7,6 +7,8 @@ path routing, and automatic semantic onboarding for any user tool.
 
 from __future__ import annotations
 
+import math
+import re
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -20,6 +22,29 @@ try:
 except ImportError:
     HAS_NETWORKX = False
     nx = None
+
+SAFE_IDENTIFIER_PATTERN = re.compile(r"^[a-zA-Z0-9_\-\./]+$")
+SAFE_RELATION_PATTERN = re.compile(r"^[A-Z0-9_]+$")
+
+
+def validate_identifier(val: str, field_name: str, max_len: int = 128) -> str:
+    """Validate identifier against null bytes, length overflows, and control characters."""
+    if not isinstance(val, str) or not val.strip():
+        raise ValueError(f"Invalid {field_name}: must be a non-empty string")
+    clean = val.strip()
+    if len(clean) > max_len:
+        raise ValueError(f"Invalid {field_name}: length ({len(clean)}) exceeds {max_len} limit")
+    if "\0" in clean:
+        raise ValueError(f"Security violation in {field_name}: contains null byte")
+    return clean
+
+
+def sanitize_text(val: str, max_len: int = 512) -> str:
+    """Strip dangerous control characters and cap length to prevent log/signal injection."""
+    if not isinstance(val, str):
+        return ""
+    cleaned = "".join(ch for ch in val if ch >= " " or ch in "\t\n")
+    return cleaned.strip()[:max_len]
 
 
 class SimpleMultiDiGraph:
@@ -107,7 +132,10 @@ class PortableToolGraph:
         self.load()
 
     def get_conn(self) -> sqlite3.Connection:
-        return sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=15.0)
+        conn.execute("PRAGMA foreign_keys = ON;")
+        conn.execute("PRAGMA busy_timeout = 5000;")
+        return conn
 
     def load(self):
         self.graph.clear()
@@ -188,7 +216,18 @@ class PortableToolGraph:
         weight: float = 1.0,
         rationale: str = "",
     ):
-        """Add an explicit relationship edge between two tools in the graph."""
+        """Add an explicit relationship edge between two tools in the graph with security checks."""
+        source_tool = validate_identifier(source_tool, "source_tool")
+        target_tool = validate_identifier(target_tool, "target_tool")
+        clean_rel = relationship.strip().upper()
+        if not SAFE_RELATION_PATTERN.match(clean_rel) or len(clean_rel) > 32:
+            raise ValueError(f"Invalid relationship type: '{relationship}'")
+        if not math.isfinite(weight) or weight < 0.0 or weight > 100.0:
+            raise ValueError(
+                f"Invalid weight: {weight} must be a finite float between 0.0 and 100.0"
+            )
+        clean_rationale = sanitize_text(rationale, max_len=512)
+
         if source_tool not in self.graph:
             self.graph.add_node(source_tool)
         if target_tool not in self.graph:
@@ -196,10 +235,10 @@ class PortableToolGraph:
         self.graph.add_edge(
             source_tool,
             target_tool,
-            key=relationship,
-            relationship_type=relationship,
+            key=clean_rel,
+            relationship_type=clean_rel,
             weight=weight,
-            rationale=rationale,
+            rationale=clean_rationale,
         )
 
     def onboard_tool(
@@ -213,11 +252,19 @@ class PortableToolGraph:
         sandbox_safe: bool = True,
         capability_weight: float = 1.0,
     ) -> dict[str, Any]:
-        """Automatically register a new tool and infer its semantic relationships."""
-        if not tool_id or len(tool_id) > 128:
-            raise ValueError("Invalid tool_id: must be non-empty and <= 128 characters")
-        if capability_weight <= 0.0:
-            raise ValueError("capability_weight must be strictly positive")
+        """Automatically register a new tool and infer its semantic relationships with security checks."""
+        clean_tool_id = validate_identifier(tool_id, "tool_id")
+        clean_server = validate_identifier(server_name, "server_name")
+        clean_name = validate_identifier(tool_name, "tool_name")
+        clean_category = validate_identifier(category, "category", max_len=64)
+        clean_description = sanitize_text(description, max_len=1024)
+
+        if (
+            not math.isfinite(capability_weight)
+            or capability_weight <= 0.0
+            or capability_weight > 100.0
+        ):
+            raise ValueError("capability_weight must be a finite float between 0.0 and 100.0")
 
         conn = self.get_conn()
         try:
@@ -229,11 +276,11 @@ class PortableToolGraph:
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
-                        tool_id,
-                        server_name,
-                        tool_name,
-                        category,
-                        description,
+                        clean_tool_id,
+                        clean_server,
+                        clean_name,
+                        clean_category,
+                        clean_description,
                         int(read_only),
                         int(sandbox_safe),
                         float(capability_weight),
@@ -241,7 +288,7 @@ class PortableToolGraph:
                 )
 
                 relationships_added = []
-                category_lower = category.lower()
+                category_lower = clean_category.lower()
 
                 # Inferred relationships
                 if "compute" in category_lower or "code" in category_lower:
