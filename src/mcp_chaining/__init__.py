@@ -2,6 +2,8 @@
 
 from mcp_chaining.db import get_db_path, init_db
 from mcp_chaining.filament import (
+    BranchKind,
+    FilamentBranch,
     FilamentNode,
     FilamentSlidingWindow,
     NodeStatus,
@@ -12,7 +14,9 @@ from mcp_chaining.graph import PortableToolGraph
 from mcp_chaining.runner import FSMSequenceRunner
 
 __all__ = [
+    "BranchKind",
     "FSMSequenceRunner",
+    "FilamentBranch",
     "FilamentNode",
     "FilamentSlidingWindow",
     "NodeStatus",

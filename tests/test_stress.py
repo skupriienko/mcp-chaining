@@ -18,6 +18,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from mcp_chaining.db import init_db
+from mcp_chaining.filament import BranchKind, ToolFilamentThread
 from mcp_chaining.graph import PortableToolGraph
 from mcp_chaining.runner import MAX_HOOK_OUTPUT_CHARS, FSMSequenceRunner
 
@@ -223,6 +224,44 @@ class TestMCPChainingStress(unittest.TestCase):
         self.assertEqual(len(captured_signals), len(seq_info["tools_pipeline"]))
         self.assertEqual(captured_signals, res["filament_telemetry"])
         self.assertIn("SYN-TEX Filament Telemetry", res["synthesis"])
+
+    def test_09_quipu_branched_filament(self):
+        """Verify Incan Quipu branched cords with secondary pendants in SYN-TEX telemetry."""
+        # 1. Register complementary relationship in graph
+        self.graph.add_relationship(
+            source_tool="context-mode/ctx_execute_file",
+            target_tool="python/test_runner",
+            relationship="COMPLEMENTS",
+            weight=0.95,
+            rationale="Post-execution automated test gate",
+        )
+        self.graph.add_relationship(
+            source_tool="context-mode/ctx_execute_file",
+            target_tool="security_scanner/guard",
+            relationship="OPPOSES",
+            weight=1.0,
+            rationale="Pre-execution adversarial validation",
+        )
+
+        thread = ToolFilamentThread(
+            tools_pipeline=["context-mode/ctx_execute_file", "context-mode/ctx_stats"],
+            states=["S2_ACTIVE", "S3_SUMMARY"],
+            backward_levels=1,
+            forward_levels=1,
+            token_saving_ratio=0.88,
+            graph=self.graph,
+        )
+
+        # Advance to step 0
+        window, sig = thread.step(0)
+        self.assertGreater(len(window.active_branches), 0)
+        self.assertTrue(any(b.kind == BranchKind.SIMILAR for b in window.active_branches))
+        self.assertTrue(any(b.kind == BranchKind.CRITIQUE for b in window.active_branches))
+
+        self.assertIn("[SYN-TEX::FILAMENT]", sig)
+        self.assertIn("⑂", sig)
+        self.assertIn("●[0:context-mode/ctx_execute_file]◈", sig)
+        self.assertIn("∅[-88% ctx]", sig)
 
 
 if __name__ == "__main__":

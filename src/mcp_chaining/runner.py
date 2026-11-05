@@ -129,6 +129,7 @@ class FSMSequenceRunner:
             forward_levels=forward_levels,
             token_saving_ratio=sequence_info.get("token_saving_ratio", 0.0),
             signal_callback=signal_callback,
+            graph=self.graph,
         )
 
         for idx, (state_str, tool_id) in enumerate(

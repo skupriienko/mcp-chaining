@@ -180,6 +180,28 @@ class PortableToolGraph:
                     )
         return opponents
 
+    def add_relationship(
+        self,
+        source_tool: str,
+        target_tool: str,
+        relationship: str = "COMPLEMENTS",
+        weight: float = 1.0,
+        rationale: str = "",
+    ):
+        """Add an explicit relationship edge between two tools in the graph."""
+        if source_tool not in self.graph:
+            self.graph.add_node(source_tool)
+        if target_tool not in self.graph:
+            self.graph.add_node(target_tool)
+        self.graph.add_edge(
+            source_tool,
+            target_tool,
+            key=relationship,
+            relationship_type=relationship,
+            weight=weight,
+            rationale=rationale,
+        )
+
     def onboard_tool(
         self,
         tool_id: str,
